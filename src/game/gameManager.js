@@ -63,9 +63,14 @@ function sendCardsToPlayers(players, playerCards, bot) {
     });
 }
 
-export function askPlayerMove(chatId, bot) {
-    const game = games.get(chatId);
-    if (!game) return;
+export async function  askPlayerMove(chatId, bot) {
+    const game = games.get(String(chatId));
+    if (!game || game.players.length === 0) return;
+
+
+    while (game.currentPlayerIndex >= game.players.length) {
+        game.currentPlayerIndex = 0;
+    }
 
     const currentPlayer = game.players[game.currentPlayerIndex];
 
@@ -76,6 +81,18 @@ export function askPlayerMove(chatId, bot) {
         { parse_mode: "Markdown" }
     );
 
+    try {
+        await bot.telegram.sendMessage(
+            currentPlayer.id,
+            `🔄 *Sizning navbatingiz!*\nJoriy karta: ${game.currentCard}`,
+            { parse_mode: "Markdown" }
+        );
+    } catch (e) {
+        console.error(`Xabar yuborishda xato (${currentPlayer.id}):`, e);
+        nextPlayer(chatId, bot); // Xatolik yuz berganda keyingi o'yinchiga o'tkazish
+    }
+
+    
     // O'yinchiga shaxsiy xabar
     bot.telegram.sendMessage(
         currentPlayer.id,

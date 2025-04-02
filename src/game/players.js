@@ -9,7 +9,11 @@ export function addPlayer(chatId, user) {
     const players = playersByChat.get(chatIdStr);
     if (players.some(p => p.id === user.id)) return false;
     
-    players.push(user);
+    players.push({
+        id: user.id,
+        name: user.first_name || user.username,
+        username: user.username // Yangi qo'shilgan qism
+    });
     return true;
 }
 

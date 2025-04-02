@@ -87,13 +87,20 @@ export function registerPlayCommand(bot) {
         const gameData = activeGames.get(chatId);
 
         if (!gameData) {
-            return ctx.answerCbQuery("⚠️ O'yin topilmadi yoki qo'shilish vaqti tugadi!", { show_alert: true });
+            return ctx.answerCbQuery("❌ O'yin topilmadi yoki qo'shilish vaqti tugadi!", {
+                show_alert: true
+            });
         }
 
-        const user = {
-            id: ctx.from.id,
-            name: ctx.from.first_name || ctx.from.username
-        };
+        // Foydalanuvchi guruhda borligini tekshirish
+        try {
+            const member = await ctx.getChatMember(ctx.from.id);
+            if (member.status === 'left') {
+                return ctx.answerCbQuery("⚠️ Siz guruhda emassiz!", { show_alert: true });
+            }
+        } catch (e) {
+            console.error("Chat memberni olishda xato:", e);
+        }
 
         try {
             if (addPlayer(chatId, user)) {
