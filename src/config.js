@@ -10,6 +10,11 @@ export const READY_TIMEOUT = 30000;
 export const MAX_PLAYERS = parseInt(process.env.MAX_PLAYERS) || 5;
 export const MIN_PLAYERS = parseInt(process.env.MIN_PLAYERS) || 2;
 export const ALL_CARDS = ["ace", "king", "joker"];
+export const CARD_EMOJIS = {
+    ace: "🃏",
+    king: "👑", 
+    joker: "🃏"
+};
 
 // Agar BOT_TOKEN topilmasa, dastur to‘xtatiladi
 if (!BOT_TOKEN) {

@@ -12,18 +12,17 @@ export function startGame(chatId, bot) {
         bot.telegram.sendMessage(chatId, "❌ O'yin boshlash uchun yetarli o'yinchi yo'q!");
         return;
     }
-    const currentPlayerIndex = Math.floor(Math.random() * players.length);
-    const playerCards = dealCards(players);
-    const currentCard = pickRandomCard();  // cards.js dan import qilingan
 
-    games.set(String(chatId), {
+    const game = {
         players,
         playerCards: dealCards(players),
         currentCard: pickRandomCard(),
-        currentPlayerIndex, // <-- to'g'ri o'zgaruvchi
+        currentPlayerIndex: Math.floor(Math.random() * players.length),
         lastPlayedCard: null,
         lastPlayerId: null
-    });
+    };
+
+    games.set(String(chatId), game);
 
     // Guruhga xabar
     bot.telegram.sendMessage(
