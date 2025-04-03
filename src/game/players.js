@@ -1,26 +1,34 @@
-const playersByChat = new Map();
-
-export function addPlayer(chatId, user) {
-    const chatIdStr = String(chatId);
-    if (!playersByChat.has(chatIdStr)) {
-        playersByChat.set(chatIdStr, []);
+class Players {
+    constructor() {
+        this.players = [];
     }
-    
-    const players = playersByChat.get(chatIdStr);
-    if (players.some(p => p.id === user.id)) return false;
-    
-    players.push({
-        id: user.id,
-        name: user.first_name || user.username,
-        username: user.username // Yangi qo'shilgan qism
-    });
-    return true;
+
+    add(player) {
+        if (this.players.some(p => p.id === player.id)) {
+            return false;
+        }
+        
+        this.players.push({
+            id: player.id,
+            first_name: player.first_name || 'Ismsiz',
+            username: player.username,
+            cards: []
+        });
+        return true;
+    }
+
+
+    remove(playerId) {
+        this.players = this.players.filter(p => p.id !== playerId);
+    }
+
+    count() {
+        return this.players.length;
+    }
+
+    get list() {
+        return [...this.players];
+    }
 }
 
-export function getPlayers(chatId) {
-    return playersByChat.get(String(chatId)) || [];
-}
-
-export function clearPlayers(chatId) {
-    playersByChat.delete(String(chatId));
-}
+module.exports = Players;

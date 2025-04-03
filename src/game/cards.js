@@ -1,36 +1,36 @@
-const CARD_TYPES = ["ace", "king", "joker"];
-const CARDS_PER_PLAYER = 5;
+const config = require("../config.js")
 
-export function dealCards(players) {
-    const playerCards = {};
-    const cardsNeeded = players.length * CARDS_PER_PLAYER;
-    let allCards = [];
-    
-    // Har bir kartadan yetarli miqdorda yaratamiz
-    while (allCards.length < cardsNeeded) {
-        allCards = [...allCards, ...CARD_TYPES];
+class Cards {
+    constructor(playerCount) {
+        this.playerCount = playerCount;
+        this.cards = this.generateDeck();
+        this.shuffle();
     }
-    
-    // Kartalarni aralashtirib olamiz
-    allCards = shuffleCards(allCards).slice(0, cardsNeeded);
 
-    // Har bir o'yinchiga 5 tadan karta beramiz
-    players.forEach((player, index) => {
-        const start = index * CARDS_PER_PLAYER;
-        playerCards[player.id] = allCards.slice(start, start + CARDS_PER_PLAYER);
-    });
-
-    return playerCards;
-}
-
-function shuffleCards(cards) {
-    for (let i = cards.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [cards[i], cards[j]] = [cards[j], cards[i]];
+    generateDeck() {
+        const totalCards = config.CARDS_PER_PLAYER * this.playerCount;
+        const deck = [];
+        
+        for (let i = 0; i < totalCards; i++) {
+            const randomType = config.CARD_TYPES[
+                Math.floor(Math.random() * config.CARD_TYPES.length)
+            ];
+            deck.push(randomType);
+        }
+        
+        return deck;
     }
-    return cards;
+
+    shuffle() {
+        for (let i = this.cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+        }
+    }
+
+    dealCards(count) {
+        return this.cards.splice(0, count);
+    }
 }
 
-export function pickRandomCard() {
-    return CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)];
-}
+module.exports = Cards;
