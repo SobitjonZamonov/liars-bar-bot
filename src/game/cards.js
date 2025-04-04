@@ -1,4 +1,4 @@
-const config = require("../config.js")
+import config from '../config.js';
 
 class Cards {
     constructor(playerCount) {
@@ -33,4 +33,4 @@ class Cards {
     }
 }
 
-module.exports = Cards;
+export default Cards;

@@ -1,6 +1,6 @@
-const config = require('../config');
+import config from '../config.js';
 
-async function playCommand(bot, msg, gameManager) {
+export async function playCommand(bot, msg, gameManager) {
     console.log('[/play] Command received', { 
         chatId: msg.chat.id,
         from: msg.from.id,
@@ -45,5 +45,3 @@ async function playCommand(bot, msg, gameManager) {
         await bot.sendMessage(chatId, `Xatolik yuz berdi: ${error.message}`);
     }
 }
-
-module.exports = { playCommand };

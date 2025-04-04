@@ -1,9 +1,9 @@
-require('dotenv').config();
-const TelegramBot = require('node-telegram-bot-api');
-const GameManager = require('./game/gameManager');
-const { startCommand } = require('./commands/start');
-const { playCommand } = require('./commands/play');
-const { gameRules } = require ('./utils/helpers.js')
+import 'dotenv/config';
+import TelegramBot from 'node-telegram-bot-api';
+import GameManager from './game/gameManager.js';
+import { startCommand } from './commands/start.js';
+import { playCommand } from './commands/play.js';
+import { gameRules } from './utils/helpers.js';
 
 const token = "7031706588:AAFQQ6x399nOgLMNe72nVFqlXBb7SF-aYXw"
 const bot = new TelegramBot(token, { polling: true });

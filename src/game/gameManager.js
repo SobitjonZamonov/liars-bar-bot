@@ -1,7 +1,7 @@
-const config = require('../config');
-const Players = require('./players');
-const Cards = require('./cards');
-const { v4: uuidv4 } = require('uuid');
+import config from '../config.js';
+import Players from './players.js';
+import Cards from './cards.js';
+import { v4 as uuidv4 } from 'uuid';
 
 class GameManager {
     constructor(bot) {
@@ -48,16 +48,26 @@ class GameManager {
             const game = this.waitingGames.get(chatId);
             if (!game) return;
 
-            if (game.players.count() < config.MIN_PLAYERS) {
-                await this.bot.sendMessage(
-                    chatId,
-                    `❌ O'yinchilar yetarli emas (${game.players.count()}/${config.MIN_PLAYERS}). O'yin bekor qilindi.`
-                );
-                this.waitingGames.delete(chatId);
-            } else {
-                await this.confirmGameStart(chatId);
-            }
-        }, config.JOIN_TIMEOUT);
+            let count = 5;
+            const interval = setInterval(() => {
+                this.bot.sendMessage(chatId, `--${count}--`);
+                count--;
+
+                if (count === 0) {
+                    clearInterval(interval);
+
+                    if (game.players.count() < config.MIN_PLAYERS) {
+                        this.bot.sendMessage(
+                            chatId,
+                            `❌ O'yinchilar yetarli emas (${game.players.count()}/${config.MAX_PLAYERS}). O'yin bekor qilindi.`
+                        );
+                        this.waitingGames.delete(chatId);
+                    } else {
+                        this.confirmGameStart(chatId);
+                    }
+                }
+            }, 1000);
+        }, config.JOIN_TIMEOUT - 5000);
 
         newGame.timer = timer;
     }
@@ -73,7 +83,7 @@ class GameManager {
             await this.bot.sendMessage(
                 chatId,
                 `🎉 ${user.first_name} o'yiniga qo'shildi!\n` +
-                `Hozirgi o'yinchilar soni: ${game.players.count()}`,
+                `o'yinchilar: (${game.players.count()}/${config.MAX_PLAYERS})`,
                 { reply_to_message_id: this.lastJoinMessageId }
             );
             return true;
@@ -90,22 +100,35 @@ class GameManager {
         game.state = 'CONFIRMATION';
 
         const playerList = game.players.list.map(p => `👉 ${p.first_name}`).join('\n');
-        
+
         await this.bot.sendMessage(
             chatId,
             `🎉 O'yin boshlanishi uchun tayyor!\n\n` +
-            `O'yinchilar:\n${playerList}\n\n` +
+            `O'yinchilar:` +
+            `\n${playerList}\n\n` +
             `O'yinni boshlaymizmi?`,
             {
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: '✅ Ha, boshlaymiz!', callback_data: 'confirm_start' }],
-                        [{ text: '❌ Bekor qilish', callback_data: 'cancel_game' }]
+                        [{ text: '✅ Ha, boshlaymiz!', callback_data: `confirm_start_${chatId}` }],
+                        [{ text: '❌ Bekor qilish', callback_data: `cancel_game_${chatId}` }]
                     ]
                 }
             }
         );
-        await this.beginGame(chatId)
+
+        this.bot.on('callback_query', async (query) => {
+            const { data, message } = query;
+            if (!message || message.chat.id !== chatId) return;
+
+            if (data === `confirm_start_${chatId}`) {
+                await this.beginGame(chatId);
+            } else if (data === `cancel_game_${chatId}`) {
+                this.bot.sendMessage(chatId, `❌ O'yin bekor qilindi.`);
+            }
+
+            await this.bot.answerCallbackQuery(query.id);
+        });
     }
 
     // O'yinni boshlash
@@ -154,9 +177,9 @@ class GameManager {
 
     // Shaxsiy kartalarni yuborish
     async sendPrivateCards(player, currentCardType) {
-        const cardList = player.cards.map((card, index) => 
+        const cardList = player.cards.map((card, index) =>
             `${index + 1}. ${card.toUpperCase()}`).join('\n');
-        
+
         await this.bot.sendMessage(
             player.id,
             `📋 Sizning kartalaringiz:\n${cardList}\n\n` +
@@ -169,20 +192,28 @@ class GameManager {
         const game = this.activeGames.get(chatId);
         if (!game || game.status !== 'IN_PROGRESS') return;
 
-        const player = game.players.list[game.players.currentIndex];
-        
+        const currentPlayer = game.players.list[game.players.currentIndex];
+        const nextPlayerIndex = (game.players.currentIndex + 1) % game.players.list.length;
+        const nextPlayer = game.players.list[nextPlayerIndex];
+
         await this.bot.sendMessage(
             chatId,
-            `👤 ${player.first_name}, navbat sizda! ` +
-            `Kartangizni shaxsiy xabarda tanlang.`
+            `👤 *${currentPlayer.first_name}*, navbat sizda! ` +
+            `Kartangizni shaxsiy xabarda tanlang.\n\n` +
+            `🔜 Keyingi o'yinchi: *${nextPlayer.first_name}*`
         );
-        
+
         // Shaxsiy chatga kartalarni yuborish
-        await this.promptCardSelection(player.id, player.cards, game.currentCardType);
+        await this.promptCardSelection(currentPlayer.id, currentPlayer.cards, game.currentCardType);
     }
 
     // Karta tanlash uchun shaxsiy keyboard
+    // Karta tanlash uchun shaxsiy keyboard
     async promptCardSelection(userId, cards, currentCardType) {
+        if (!cards.length) {
+            return await this.bot.sendMessage(userId, "Sizda hech qanday karta yo'q.");
+        }
+
         const cardButtons = cards.map((_, index) => ({
             text: `Karta ${index + 1}`,
             callback_data: `select_card_${index}`
@@ -190,17 +221,14 @@ class GameManager {
 
         await this.bot.sendMessage(
             userId,
-            `Tanlang (${currentCardType} deb atash kerak):`,
+            `🃏 *Kartalaringizni tanlang* (${currentCardType} deb atash kerak):`,
             {
-                reply_markup: {
-                    inline_keyboard: [
-                        ...cardButtons.map(btn => [btn]),
-                        [{ text: '🤥 LIAR!', callback_data: 'call_liar' }]
-                    ]
-                }
+                parse_mode: "Markdown",
+                reply_markup: { inline_keyboard: [cardButtons] } // Tugmalar bitta qatorda
             }
         );
     }
+
 
     // Karta o'ynash
     async playCard(userId, cardIndex) {
@@ -210,13 +238,25 @@ class GameManager {
         const game = this.activeGames.get(chatId);
         if (!game || game.status !== 'IN_PROGRESS') return;
 
-        const player = game.players.list.find(p => p.id === userId);
-        if (!player || cardIndex >= player.cards.length) return;
+        const playerIndex = game.players.list.findIndex(p => p.id === userId);
+        if (playerIndex === -1) return;
 
-        const playedCard = player.cards[cardIndex];
+        // Agar foydalanuvchi hozirgi o'yinchi bo'lmasa, xabar yuborish va funksiya tugatish
+        if (game.players.currentIndex !== playerIndex) {
+            return await this.bot.sendMessage(userId, "❌ Sizning navbatingiz emas! Kuting.");
+        }
+
+        const player = game.players.list[playerIndex];
+
+        // Karta indeksi noto'g'ri bo'lsa
+        if (cardIndex < 0 || cardIndex >= player.cards.length) {
+            return await this.bot.sendMessage(userId, "❌ Noto‘g‘ri karta tanlandi.");
+        }
+
+        const playedCard = player.cards.splice(cardIndex, 1)[0];
         game.lastPlayedCard = playedCard;
 
-        // Grupga yopiq ko'rinishda xabar
+        // Guruhga xabar
         await this.bot.sendMessage(
             chatId,
             `🃏 ${player.first_name} karta tashladi!`,
@@ -239,35 +279,63 @@ class GameManager {
         const game = this.activeGames.get(chatId);
         if (!game || game.status !== 'IN_PROGRESS') return;
 
+        const currentPlayer = game.players.list[game.players.currentIndex];
         const previousIndex = (game.players.currentIndex - 1 + game.players.list.length) % game.players.list.length;
-        const previousPlayer = game.players.list[previousIndex];
-        const liarPlayer = game.players.list.find(p => p.id === userId);
+        const previousPlayer = game.players.list[previousIndex]; // Oldingi o‘yinchi
+        const liarPlayer = game.players.list.find(p => p.id === userId); // "Liar" chaqirgan o‘yinchi
+
+        if (liarPlayer.id !== currentPlayer.id) {
+            // O'yinchi o'z kartasiga "Liar" deb chaqira olmaydi
+            return await this.bot.sendMessage(chatId, `⚠️ Siz o'zingizning kartangizga "Liar" deb chaqira olmaysiz!`);
+        }
 
         await this.bot.sendMessage(
             chatId,
-            `${liarPlayer.first_name} "Liar" deb chaqirdi! Tashlangan karta: ${game.lastPlayedCard}`
+            `⚠️ ${liarPlayer.first_name} "Liar" deb chaqirdi! 🃏 Tashlangan karta: ${game.lastPlayedCard}`
         );
 
         // Kim noto'g'ri ishlagan?
         if (game.lastPlayedCard === game.currentCardType) {
+            liarPlayer.chances = (liarPlayer.chances || config.DEFAULT_CHANCES) - 1; // Shans kamayadi
             await this.bot.sendMessage(
                 chatId,
-                `${liarPlayer.first_name} noto'g'ri chaqirdi! ${liarPlayer.first_name} o'yindan chiqdi.`
+                `❌ ${liarPlayer.first_name} noto'g'ri chaqirdi! Qolgan shanslari: ${liarPlayer.chances}/${config.DEFAULT_CHANCES}`
             );
-            game.players.list = game.players.list.filter(p => p.id !== liarPlayer.id);
+
+            if (liarPlayer.chances === 0) {
+                await this.bot.sendMessage(chatId, `💀 ${liarPlayer.first_name} o'yindan chiqdi!`);
+                game.players.list = game.players.list.filter(p => p.id !== liarPlayer.id);
+            }
         } else {
+            previousPlayer.chances = (previousPlayer.chances || config.DEFAULT_CHANCES) - 1; // Shans kamayadi
             await this.bot.sendMessage(
                 chatId,
-                `${previousPlayer.first_name} bluff qilgan edi! ${previousPlayer.first_name} o'yindan chiqdi.`
+                `🔥 ${previousPlayer.first_name} bluff qilgan edi! Qolgan shanslari: ${previousPlayer.chances}/${config.DEFAULT_CHANCES}`
             );
-            game.players.list = game.players.list.filter(p => p.id !== previousPlayer.id);
+
+            if (previousPlayer.chances === 0) {
+                await this.bot.sendMessage(chatId, `💀 ${previousPlayer.first_name} o'yindan chiqdi!`);
+                game.players.list = game.players.list.filter(p => p.id !== previousPlayer.id);
+            }
         }
 
-        // O'yin yakunlandi?
+        // Agar kimdadir kartalar qolmasa, u g'olib deb e'lon qilinadi
+        for (const player of game.players.list) {
+            if (player.cards.length === 0) {
+                await this.bot.sendMessage(
+                    chatId,
+                    `🎉 ${player.first_name} barcha kartalarini tashladi va G'OLIB bo'ldi!`
+                );
+                this.activeGames.delete(chatId);
+                return;
+            }
+        }
+
+        // O'yinda faqat 1 ta o'yinchi qolsa, u g'olib
         if (game.players.list.length === 1) {
             await this.bot.sendMessage(
                 chatId,
-                `🎉 O'yin yakunlandi! G'olib: ${game.players.list[0].first_name}`
+                `🏆 O'yin tugadi! G'olib: ${game.players.list[0].first_name}`
             );
             this.activeGames.delete(chatId);
         } else {
@@ -280,17 +348,8 @@ class GameManager {
         const game = this.activeGames.get(chatId);
         if (!game) return;
 
-        const playersWithCards = game.players.list.filter(p => p.cards.length > 0);
-        if (playersWithCards.length < 2) {
-            game.deck = new Cards(game.players.list.length);
-            game.players.list.forEach(player => {
-                player.cards = game.deck.dealCards(config.CARDS_PER_PLAYER);
-                this.sendPrivateCards(player, game.currentCardType);
-            });
-            await this.bot.sendMessage(chatId, 'Yangi raund boshlanmoqda... Yangi kartalar tarqatildi.');
-        }
-
         game.currentCardType = config.CARD_TYPES[Math.floor(Math.random() * config.CARD_TYPES.length)];
+
         game.players.currentIndex = Math.floor(Math.random() * game.players.list.length);
 
         await this.bot.sendMessage(
@@ -299,6 +358,7 @@ class GameManager {
             `Birinchi o'yinchi: ${game.players.list[game.players.currentIndex].first_name}`
         );
 
+        // Yangi raund uchun o'yinchiga navbat berish
         await this.promptPlayer(chatId);
     }
 
@@ -313,4 +373,4 @@ class GameManager {
     }
 }
 
-module.exports = GameManager;
+export default GameManager;

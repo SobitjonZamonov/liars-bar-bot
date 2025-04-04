@@ -1,4 +1,4 @@
-const gameRules = `
+export const gameRules = `
     🃏 O'yin qoidalari 🃏
     1️⃣ Botni qo'shish – O'yinni boshlash uchun botni guruhga qo'shib, adminlik huquqini berish kerak.
 
@@ -33,4 +33,3 @@ const gameRules = `
     🎮 Omad tilaymiz! 🎮
 `
 
-module.exports = { gameRules };

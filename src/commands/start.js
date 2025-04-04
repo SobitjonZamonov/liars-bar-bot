@@ -1,4 +1,4 @@
-async function startCommand(bot, msg) {
+export async function startCommand(bot, msg) {
     await bot.sendMessage(
       msg.chat.id,
       `Salom! Bu "Liars Bar" o'yini boti. O'ynash uchun /play buyrug'ini yuboring.`
@@ -9,5 +9,3 @@ async function startCommand(bot, msg) {
       `oyin haqida batfsil /help bolimiga o'ting`
     )
   }
-  
-  module.exports = { startCommand };
