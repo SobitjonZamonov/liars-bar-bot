@@ -1,5 +1,3 @@
-import config from '../config.js';
-
 export async function playCommand(bot, msg, gameManager) {
     console.log('[/play] Command received', { 
         chatId: msg.chat.id,

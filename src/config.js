@@ -2,7 +2,7 @@ export default {
   MIN_PLAYERS: 2,
   MAX_PLAYERS: 5,
   JOIN_TIMEOUT: 10000, // 10 seconds
-  CONFIRMATION_TIMEOUT: 10000, // 10 seconds
+  CONFIRMATION_TIMEOUT: 30000, // 10 seconds
   CARDS_PER_PLAYER: 5,
   DEFAULT_CHANCES: 3,
   CARD_TYPES: ['ace', 'king', 'joker'],

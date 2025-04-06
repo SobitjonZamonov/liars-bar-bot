@@ -3,13 +3,17 @@ import TelegramBot from 'node-telegram-bot-api';
 import GameManager from './game/gameManager.js';
 import { startCommand } from './commands/start.js';
 import { playCommand } from './commands/play.js';
-import { gameRules } from './utils/helpers.js';
+import { gamCredentials, gameRules } from './utils/helpers.js';
 
 const token = "7031706588:AAFQQ6x399nOgLMNe72nVFqlXBb7SF-aYXw"
 const bot = new TelegramBot(token, { polling: true });
 
 const gameManager = new GameManager(bot);
 
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, gamCredentials)
+});
 bot.onText(/\/start/, (msg) => startCommand(bot, msg));
 bot.onText(/\/play/, (msg) => playCommand(bot, msg, gameManager));
 

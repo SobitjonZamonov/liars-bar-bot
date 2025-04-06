@@ -41,6 +41,9 @@ class GameManager {
                 }
             }
         );
+        const gifUrl = 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHdscmNpYmdpbWdvdnZrOHNycHU4MGEzNjdhOGlkODJwem1nbzczYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/4GjqybxT3dssw/giphy.gif'
+
+        this.bot.sendAnimation(chatId, gifUrl)
 
         this.lastJoinMessageId = joinMessage.message_id;
 

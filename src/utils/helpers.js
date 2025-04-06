@@ -33,3 +33,7 @@ export const gameRules = `
     🎮 Omad tilaymiz! 🎮
 `
 
+export const gamCredentials = `
+    bot ni to'liq foydalanish uchun guruhga qo'shing va adminlik huquqini bering!
+`
+
