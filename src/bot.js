@@ -5,7 +5,7 @@ import { startCommand } from './commands/start.js';
 import { playCommand } from './commands/play.js';
 import { gamCredentials, gameRules } from './utils/helpers.js';
 
-const token = "7031706588:AAFQQ6x399nOgLMNe72nVFqlXBb7SF-aYXw"
+const token = process.env.BOT_TOKEN
 const bot = new TelegramBot(token, { polling: true });
 
 const gameManager = new GameManager(bot);
@@ -46,10 +46,6 @@ bot.on('callback_query', async (callbackQuery) => {
                 await gameManager.handleLiarCall(chatId, user.id);
                 await bot.answerCallbackQuery(callbackQuery.id);
             }
-        }
-        else if (data === 'confirm_start') {
-            await gameManager.confirmGameStart(chatId);
-            await bot.answerCallbackQuery(callbackQuery.id);
         }
         else if (data === 'liar_call') {
             await gameManager.handleLiarCall(chatId, user.id);

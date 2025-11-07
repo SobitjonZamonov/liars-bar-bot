@@ -31,7 +31,7 @@ class GameManager {
         const joinMessage = await this.bot.sendMessage(
             chatId,
             '🎮 Liars Bar o\'yini boshlanmoqda!\n' +
-            `Qo'shilish uchun 10 soniya vaqt bor.\n` +
+            `Qo'shilish uchun 30 soniya vaqt bor.\n` +
             `Minimum ${config.MIN_PLAYERS} ta, maksimum ${config.MAX_PLAYERS} ta o'yinchi kerak.`,
             {
                 reply_markup: {
@@ -41,7 +41,7 @@ class GameManager {
                 }
             }
         );
-        const gifUrl = 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHdscmNpYmdpbWdvdnZrOHNycHU4MGEzNjdhOGlkODJwem1nbzczYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/4GjqybxT3dssw/giphy.gif'
+        const gifUrl = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHRpNHA1N2xvYnRvZWY1NXExaGEyb3YxYjUzNzF0NThoajc4YXNwdiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/cNFFHJ5Ki8KBJbS2Lt/giphy.gif'
 
         this.bot.sendAnimation(chatId, gifUrl)
 
@@ -66,7 +66,7 @@ class GameManager {
                         );
                         this.waitingGames.delete(chatId);
                     } else {
-                        this.confirmGameStart(chatId);
+                        this.beginGame(chatId);
                     }
                 }
             }, 1000);
@@ -92,46 +92,6 @@ class GameManager {
             return true;
         }
         return false;
-    }
-
-    // O'yinni boshlashni tasdiqlash
-    async confirmGameStart(chatId) {
-        const game = this.waitingGames.get(chatId);
-        if (!game) return;
-
-        clearTimeout(game.timer);
-        game.state = 'CONFIRMATION';
-
-        const playerList = game.players.list.map(p => `👉 ${p.first_name}`).join('\n');
-
-        await this.bot.sendMessage(
-            chatId,
-            `🎉 O'yin boshlanishi uchun tayyor!\n\n` +
-            `O'yinchilar:` +
-            `\n${playerList}\n\n` +
-            `O'yinni boshlaymizmi?`,
-            {
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '✅ Ha, boshlaymiz!', callback_data: `confirm_start_${chatId}` }],
-                        [{ text: '❌ Bekor qilish', callback_data: `cancel_game_${chatId}` }]
-                    ]
-                }
-            }
-        );
-
-        this.bot.on('callback_query', async (query) => {
-            const { data, message } = query;
-            if (!message || message.chat.id !== chatId) return;
-
-            if (data === `confirm_start_${chatId}`) {
-                await this.beginGame(chatId);
-            } else if (data === `cancel_game_${chatId}`) {
-                this.bot.sendMessage(chatId, `❌ O'yin bekor qilindi.`);
-            }
-
-            await this.bot.answerCallbackQuery(query.id);
-        });
     }
 
     // O'yinni boshlash
@@ -210,7 +170,6 @@ class GameManager {
         await this.promptCardSelection(currentPlayer.id, currentPlayer.cards, game.currentCardType);
     }
 
-    // Karta tanlash uchun shaxsiy keyboard
     // Karta tanlash uchun shaxsiy keyboard
     async promptCardSelection(userId, cards, currentCardType) {
         if (!cards.length) {
